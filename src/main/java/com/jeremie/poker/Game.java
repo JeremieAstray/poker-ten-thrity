@@ -21,8 +21,17 @@ public class Game {
      */
     public List<Player> players;
 
+    /**
+     * 庄家号码
+     */
+    public int banker;
+
+    /**
+     * 初始化盘面
+     */
     public void init() {
-        List<Poker> pokers = Arrays.asList(new Poker("1", Poker.Suit.club, 1),
+        List<Poker> pokers = Arrays.asList(
+                new Poker("A", Poker.Suit.club, 1),
                 new Poker("2", Poker.Suit.club, 2),
                 new Poker("3", Poker.Suit.club, 3),
                 new Poker("4", Poker.Suit.club, 4),
@@ -35,7 +44,7 @@ public class Game {
                 new Poker("J", Poker.Suit.club, 0.5),
                 new Poker("Q", Poker.Suit.club, 0.5),
                 new Poker("K", Poker.Suit.club, 0.5),
-                new Poker("1", Poker.Suit.diamond, 1),
+                new Poker("A", Poker.Suit.diamond, 1),
                 new Poker("2", Poker.Suit.diamond, 2),
                 new Poker("3", Poker.Suit.diamond, 3),
                 new Poker("4", Poker.Suit.diamond, 4),
@@ -48,7 +57,7 @@ public class Game {
                 new Poker("J", Poker.Suit.diamond, 0.5),
                 new Poker("Q", Poker.Suit.diamond, 0.5),
                 new Poker("K", Poker.Suit.diamond, 0.5),
-                new Poker("1", Poker.Suit.heart, 1),
+                new Poker("A", Poker.Suit.heart, 1),
                 new Poker("2", Poker.Suit.heart, 2),
                 new Poker("3", Poker.Suit.heart, 3),
                 new Poker("4", Poker.Suit.heart, 4),
@@ -61,7 +70,7 @@ public class Game {
                 new Poker("J", Poker.Suit.heart, 0.5),
                 new Poker("Q", Poker.Suit.heart, 0.5),
                 new Poker("K", Poker.Suit.heart, 0.5),
-                new Poker("1", Poker.Suit.spade, 1),
+                new Poker("A", Poker.Suit.spade, 1),
                 new Poker("2", Poker.Suit.spade, 2),
                 new Poker("3", Poker.Suit.spade, 3),
                 new Poker("4", Poker.Suit.spade, 4),
@@ -78,24 +87,101 @@ public class Game {
         pokersQueue = new LinkedBlockingQueue<>(pokers);
         int playerNumber = getPlayerNumberByPane();
         players = new ArrayList<>();
-        int banker = RandomUtils.nextInt(playerNumber) + 1;
+        banker = RandomUtils.nextInt(playerNumber) + 1;
         for (int i = 0; i < playerNumber; i++) {
             Poker poker = pokersQueue.poll();
             Player player = new Player("player" + (i + 1), poker, banker - 1 == i);
             players.add(player);
         }
+    }
+
+    /**
+     * 玩游戏
+     */
+    public void play(){
         for (Player player : players) {
             Poker poker = player.getPokers().get(0);
-            System.out.println(player.getName() + " " + poker.getSuit().cn + " " + poker.getName() + " 分值：" + player.getValue() + " 是否庄-->" + player.isBanker());
+            getCard(player);
+            Poker poker1 = player.getPokers().get(1);
+            System.out.println(player.getName() + " " + poker.getCardName() + "，" +
+                    poker1.getCardName() + " 分值：" +
+                    player.getValue() + " 是否庄-->" + player.isBanker());
         }
+        System.out.println("--------结果---------");
+        printResult(banker,players);
     }
 
-
-    public static void main(String[] args) {
-        Game game = new Game();
-        game.init();
+    /**
+     * 返回是否爆煲
+     *
+     * @param player
+     * @return
+     */
+    public boolean getCard(Player player) {
+        Poker poker = pokersQueue.poll();
+        System.out.println(player.getName() + "拿到" + poker.getCardName());
+        return player.addPokers(poker);
     }
 
+    /**
+     * 根据现有状况打印结果
+     * @param bankerNum 庄家的号码
+     * @param players 玩家
+     */
+    public void printResult(int bankerNum, List<Player> players) {
+        Player banker = players.get(bankerNum - 1);
+        for (int i = 0; i < players.size(); i++) {
+            if (bankerNum != i + 1) {
+                Player player = players.get(i);
+                if (player.getValue() - 10.5 > 0.001) {
+                    //闲家大于10.5
+                    System.out.print("爆煲：");
+                    printWinner(banker, player);
+                } else if (player.getPokers().size() >= 5) {
+                    //闲家五龙
+                    System.out.print("五龙：");
+                    printWinner(player, banker);
+                } else if (Math.abs(player.getValue() - 10.5) < 0.001 && Math.abs(banker.getValue()) - 10.5 < 0.001)
+                    //庄家和闲家都10点半
+                    printWinner(banker, player);
+                else if (player.getPokers().size() == 2 && player.getValue() - 10.5 < 0.001)
+                    //闲家倘若为一只10加一只 J,Q或K 成十点半
+                    printWinner(player, banker);
+                else if (player.getValue() - 10.5 < 0.001) {
+                    if (banker.getValue() - 10.5 > 0.001)
+                        //闲家未爆，庄家爆
+                        printWinner(player, banker);
+                    else if(Math.abs(player.getValue()-banker.getValue())<0.001) {
+                        //点数相同，庄家胜，称食夹棍
+                        System.out.print("食夹棍：");
+                        printWinner(banker,player);
+                    }else if(player.getValue()-banker.getValue() > 0.001)
+                        //闲家大于庄家
+                        printWinner(player,banker);
+                    else
+                        //其他
+                        printWinner(banker,player);
+                }
+            }
+        }
+
+
+    }
+
+    /**
+     * 打印赢家
+     * @param winner
+     * @param loser
+     */
+    public void printWinner(Player winner, Player loser) {
+        System.out.println(winner.getName() + "对" + loser.getName() + "：" + winner.getName() + "赢");
+
+    }
+
+    /**
+     * 获取玩家人数
+     * @return
+     */
     public int getPlayerNumberByPane() {
         String number = JOptionPane.showInputDialog("请输入要玩的人数(大于等2人，少于等于4人)");
         while (number == null || !StringUtils.isNumeric(number) || StringUtils.isBlank(number)) {
@@ -113,6 +199,12 @@ public class Game {
             platerNumber = Integer.parseInt(number);
         }
         return platerNumber;
+    }
+
+    public static void main(String[] args) {
+        Game game = new Game();
+        game.init();
+        game.play();
     }
 
 }
