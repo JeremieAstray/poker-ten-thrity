@@ -1,9 +1,7 @@
 package com.jeremie.poker;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.RandomUtils;
 
-import javax.swing.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -85,7 +83,7 @@ public class Game {
                 new Poker("K", Poker.Suit.spade, 0.5));
         Collections.shuffle(pokers);
         pokersQueue = new LinkedBlockingQueue<>(pokers);
-        int playerNumber = getPlayerNumberByPane();
+        int playerNumber = View.getPlayerNumberByPane();
         players = new ArrayList<>();
         banker = RandomUtils.nextInt(playerNumber) + 1;
         for (int i = 0; i < playerNumber; i++) {
@@ -101,7 +99,7 @@ public class Game {
     public void play() {
         for (Player player : players) {
             Poker poker = player.getPokers().get(0);
-            System.out.println(player.getName() + " " + poker.getCardName() + "，" +
+            View.printlnText(player.getName() + " " + poker.getCardName() + "，" +
                     poker.getCardName() + " 分值：" +
                     player.getValue() + " 是否庄-->" + player.isBanker());
         }
@@ -110,7 +108,7 @@ public class Game {
                 askForCard(players.get(i));
         askForCard(players.get(banker - 1));
 
-        System.out.println("--------结果---------");
+        View.printlnText("--------结果---------");
         printResult(banker, players);
     }
 
@@ -120,26 +118,25 @@ public class Game {
      * @param player
      */
     public void askForCard(Player player) {
-        System.out.println("--------" + player.getName() + "加牌环节---------");
+        View.printlnText("--------" + player.getName() + "加牌环节---------");
         boolean need;
         do {
             if (player.getPokers().size() == 5) {
-                System.out.println(player.getName() + "已经满5张牌，停止加牌！");
+                View.printlnText(player.getName() + "已经满5张牌，停止加牌！");
                 break;
             } else if (player.getValue() - 10.5 > 0.001) {
-                System.out.println(player.getName() + "分值已经过10.5，停止加牌！");
+                View.printlnText(player.getName() + "分值已经过10.5，停止加牌！");
                 break;
             } else if (player.getPokers().size() == 2 && Math.abs(player.getValue() - 10.5) < 0.001) {
-                System.out.println(player.getName() + "玩家已赢，停止加牌！");
+                View.printlnText(player.getName() + "玩家已赢，停止加牌！");
                 break;
             }
-            int answer = JOptionPane.showConfirmDialog(null, player.getName() + "，请问你要加牌么？");
-            need = JOptionPane.YES_OPTION == answer;
+            need = View.askForCard(player.getName());
             if (need) {
                 getCard(player);
                 printPlayerCard(player);
             } else {
-                System.out.println(player.getName() + "停止加牌！");
+                View.printlnText(player.getName() + "停止加牌！");
             }
         } while (need);
     }
@@ -150,15 +147,15 @@ public class Game {
      * @param player
      */
     public void printPlayerCard(Player player) {
-        System.out.print(player.getName() + "手上的卡：");
+        View.printText(player.getName() + "手上的卡：");
         List<Poker> pokers = player.getPokers();
         for (int i = 0; i < pokers.size(); i++) {
             if (i == pokers.size())
-                System.out.print(pokers.get(i).getCardName());
+                View.printText(pokers.get(i).getCardName());
             else
-                System.out.print(pokers.get(i).getCardName() + "，");
+                View.printText(pokers.get(i).getCardName() + "，");
         }
-        System.out.println(" 总分 " + player.getValue());
+        View.printlnText(" 总分 " + player.getValue());
     }
 
     /**
@@ -169,7 +166,7 @@ public class Game {
      */
     public boolean getCard(Player player) {
         Poker poker = pokersQueue.poll();
-        System.out.println(player.getName() + "拿到" + poker.getCardName());
+        View.printlnText(player.getName() + "拿到" + poker.getCardName());
         return player.addPokers(poker);
     }
 
@@ -186,11 +183,11 @@ public class Game {
                 Player player = players.get(i);
                 if (player.getValue() - 10.5 > 0.001) {
                     //闲家大于10.5
-                    System.out.print("爆煲：");
+                    View.printText("爆煲：");
                     printWinner(banker, player);
                 } else if (player.getPokers().size() >= 5) {
                     //闲家五龙
-                    System.out.print("五龙：");
+                    View.printText("五龙：");
                     printWinner(player, banker);
                 } else if (Math.abs(player.getValue() - 10.5) < 0.001 && Math.abs(banker.getValue()) - 10.5 < 0.001)
                     //庄家和闲家都10点半
@@ -204,7 +201,7 @@ public class Game {
                         printWinner(player, banker);
                     else if (Math.abs(player.getValue() - banker.getValue()) < 0.001) {
                         //点数相同，庄家胜，称食夹棍
-                        System.out.print("食夹棍：");
+                        View.printText("食夹棍：");
                         printWinner(banker, player);
                     } else if (player.getValue() - banker.getValue() > 0.001)
                         //闲家大于庄家
@@ -224,32 +221,8 @@ public class Game {
      * @param loser
      */
     public void printWinner(Player winner, Player loser) {
-        System.out.println(winner.getName() + "对" + loser.getName() + "：" + winner.getName() + "赢");
+        View.printlnText(winner.getName() + "对" + loser.getName() + "：" + winner.getName() + "赢");
 
-    }
-
-    /**
-     * 获取玩家人数
-     *
-     * @return
-     */
-    public int getPlayerNumberByPane() {
-        String number = JOptionPane.showInputDialog("请输入要玩的人数(大于等2人，少于等于4人)");
-        while (number == null || !StringUtils.isNumeric(number) || StringUtils.isBlank(number)) {
-            JOptionPane.showMessageDialog(null, "请输入数字!");
-            number = JOptionPane.showInputDialog("请输入要玩的人数(大于2人，少于5人)");
-        }
-        int platerNumber = Integer.parseInt(number);
-        while (platerNumber < 2 || platerNumber > 4) {
-            JOptionPane.showMessageDialog(null, "请输入大于2人，少于5人的数字!");
-            number = JOptionPane.showInputDialog("请输入要玩的人数(大于2人，少于5人)");
-            while (number == null || !StringUtils.isNumeric(number) || StringUtils.isBlank(number)) {
-                JOptionPane.showMessageDialog(null, "请输入数字!");
-                number = JOptionPane.showInputDialog("请输入要玩的人数(大于2人，少于5人)");
-            }
-            platerNumber = Integer.parseInt(number);
-        }
-        return platerNumber;
     }
 
     public static void main(String[] args) {
