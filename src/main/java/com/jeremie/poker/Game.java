@@ -129,6 +129,9 @@ public class Game {
             } else if (player.getValue() - 10.5 > 0.001) {
                 System.out.println(player.getName() + "分值已经过10.5，停止加牌！");
                 break;
+            } else if (player.getPokers().size() == 2 && Math.abs(player.getValue() - 10.5) < 0.001) {
+                System.out.println(player.getName() + "玩家已赢，停止加牌！");
+                break;
             }
             int answer = JOptionPane.showConfirmDialog(null, player.getName() + "，请问你要加牌么？");
             need = JOptionPane.YES_OPTION == answer;
