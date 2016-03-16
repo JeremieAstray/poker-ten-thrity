@@ -98,17 +98,64 @@ public class Game {
     /**
      * 玩游戏
      */
-    public void play(){
+    public void play() {
         for (Player player : players) {
             Poker poker = player.getPokers().get(0);
-            getCard(player);
-            Poker poker1 = player.getPokers().get(1);
             System.out.println(player.getName() + " " + poker.getCardName() + "，" +
-                    poker1.getCardName() + " 分值：" +
+                    poker.getCardName() + " 分值：" +
                     player.getValue() + " 是否庄-->" + player.isBanker());
         }
+        for (int i = 0; i < players.size(); i++)
+            if (i != banker - 1)
+                askForCard(players.get(i));
+        askForCard(players.get(banker - 1));
+
         System.out.println("--------结果---------");
-        printResult(banker,players);
+        printResult(banker, players);
+    }
+
+    /**
+     * 询问是否要卡
+     *
+     * @param player
+     */
+    public void askForCard(Player player) {
+        System.out.println("--------" + player.getName() + "加牌环节---------");
+        boolean need;
+        do {
+            if (player.getPokers().size() == 5) {
+                System.out.println(player.getName() + "已经满5张牌，停止加牌！");
+                break;
+            } else if (player.getValue() - 10.5 > 0.001) {
+                System.out.println(player.getName() + "分值已经过10.5，停止加牌！");
+                break;
+            }
+            int answer = JOptionPane.showConfirmDialog(null, player.getName() + "，请问你要加牌么？");
+            need = JOptionPane.YES_OPTION == answer;
+            if (need) {
+                getCard(player);
+                printPlayerCard(player);
+            } else {
+                System.out.println(player.getName() + "停止加牌！");
+            }
+        } while (need);
+    }
+
+    /**
+     * 打印玩家手上的牌
+     *
+     * @param player
+     */
+    public void printPlayerCard(Player player) {
+        System.out.print(player.getName() + "手上的卡：");
+        List<Poker> pokers = player.getPokers();
+        for (int i = 0; i < pokers.size(); i++) {
+            if (i == pokers.size())
+                System.out.print(pokers.get(i).getCardName());
+            else
+                System.out.print(pokers.get(i).getCardName() + "，");
+        }
+        System.out.println(" 总分 " + player.getValue());
     }
 
     /**
@@ -125,8 +172,9 @@ public class Game {
 
     /**
      * 根据现有状况打印结果
+     *
      * @param bankerNum 庄家的号码
-     * @param players 玩家
+     * @param players   玩家
      */
     public void printResult(int bankerNum, List<Player> players) {
         Player banker = players.get(bankerNum - 1);
@@ -151,25 +199,24 @@ public class Game {
                     if (banker.getValue() - 10.5 > 0.001)
                         //闲家未爆，庄家爆
                         printWinner(player, banker);
-                    else if(Math.abs(player.getValue()-banker.getValue())<0.001) {
+                    else if (Math.abs(player.getValue() - banker.getValue()) < 0.001) {
                         //点数相同，庄家胜，称食夹棍
                         System.out.print("食夹棍：");
-                        printWinner(banker,player);
-                    }else if(player.getValue()-banker.getValue() > 0.001)
+                        printWinner(banker, player);
+                    } else if (player.getValue() - banker.getValue() > 0.001)
                         //闲家大于庄家
-                        printWinner(player,banker);
+                        printWinner(player, banker);
                     else
                         //其他
-                        printWinner(banker,player);
+                        printWinner(banker, player);
                 }
             }
         }
-
-
     }
 
     /**
      * 打印赢家
+     *
      * @param winner
      * @param loser
      */
@@ -180,6 +227,7 @@ public class Game {
 
     /**
      * 获取玩家人数
+     *
      * @return
      */
     public int getPlayerNumberByPane() {
